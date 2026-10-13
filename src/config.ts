@@ -70,7 +70,7 @@ const PromptsFileSchema = z.object({
 async function readYaml(filePath: string) {
   const file = Bun.file(filePath)
 
-  if (!file.exists()) throw new Error(`File not found: ${filePath}`)
+  if (!(await file.exists())) throw new Error(`File not found: ${filePath}`)
 
   try {
     return parse(await file.text())
