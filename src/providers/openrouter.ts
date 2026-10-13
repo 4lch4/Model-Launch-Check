@@ -1,8 +1,7 @@
-import { APIConnectionError, APIError, APIUserAbortError, OpenAI } from 'openai'
+import { APIConnectionError, APIError, APIUserAbortError, type OpenAI } from 'openai'
 import { z } from 'zod'
-
 import type { ModelConfig, ResolvedPrompt } from '../config'
-import { RequestError, type Provider, type RunResult } from '../types'
+import { type Provider, RequestError, type RunResult } from '../types'
 
 const UsageSchema = z.object({
   prompt_tokens: z.number().nullish(),
@@ -14,10 +13,12 @@ const ChunkSchema = z.object({
   choices: z
     .array(
       z.object({
-        delta: z.object({
-          content: z.string().nullish(),
-          reasoning: z.string().nullish(),
-        }).nullish(),
+        delta: z
+          .object({
+            content: z.string().nullish(),
+            reasoning: z.string().nullish(),
+          })
+          .nullish(),
         finish_reason: z.string().nullish(),
       }),
     )
