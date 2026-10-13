@@ -5,8 +5,8 @@ const ROOT = `${import.meta.dir}/..`
 
 //#region Schemas
 const PricingSchema = z.object({
-  inputPerM: z.number().int().positive(),
-  outputPerM: z.number().int().positive(),
+  inputPerM: z.number().positive(),
+  outputPerM: z.number().positive(),
 })
 
 const ModelConfigSchema = z
