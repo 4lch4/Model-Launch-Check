@@ -120,7 +120,7 @@ async function readYaml(filePath: string) {
   try {
     return parse(await file.text())
   } catch (error) {
-    throw new Error(`Failed to read YAML file: ${filePath}. Error: ${error}`)
+    throw new Error(`Failed to read YAML file: ${filePath}. Error: ${error}`, { cause: error })
   }
 }
 
