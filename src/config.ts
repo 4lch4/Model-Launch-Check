@@ -69,6 +69,12 @@ const PromptsFileSchema = z.object({
 })
 //#endregion Schemas
 
+//#region Inferred Types
+export type Providers = z.infer<typeof ProvidersSchema>
+export type ModelConfig = z.infer<typeof ModelConfigSchema>
+export type PromptConfig = z.infer<typeof PromptSchema>
+//#endregion Inferred Types
+
 async function readYaml(filePath: string) {
   const file = Bun.file(filePath)
 
