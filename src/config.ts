@@ -30,17 +30,28 @@ const ModelConfigSchema = z
     }
   })
 
-const PromptSchema = z
-  .object({
-    id: z.string(),
-    kind: z.string(),
-    text: z.string().optional(), // Must be present if Instruction & File aren't.
-    maxTokens: z.number().int().positive().optional(),
-    instruction: z.string().optional(), // Must be present with File if Text isn't.
-    file: z.string().optional(), // Must be present with Instruction if Text isn't.
-    temperature: z.number().min(0).max(1).optional(),
-  })
+const ModelsFileSchema = z.object({
+  models: z.array(ModelConfigSchema),
+})
+
+const PromptIdentitySchema = z.object({
+  id: z.string(),
+  kind: z.string(),
+})
+
+const PromptsDefaultSchema = z.object({
+  maxTokens: z.number().int().positive(),
+  temperature: z.number().min(0).max(1),
+})
+
+const PromptSchema = PromptIdentitySchema.extend({
+  text: z.string().optional(), // Must be present if Instruction & File aren't.
+  instruction: z.string().optional(), // Must be present with File if Text isn't.
+  file: z.string().optional(), // Must be present with Instruction if Text isn't.
+})
+  .extend(PromptsDefaultSchema.partial().shape)
   .check(ctx => {
+    // Make sure file is present if instruction is.
     if (ctx.value.instruction && !ctx.value.file) {
       ctx.issues.push({
         code: 'custom',
@@ -48,6 +59,17 @@ const PromptSchema = z
         input: ctx.value,
       })
     }
+
+    // Make sure instruction is present if file is.
+    if (ctx.value.file && !ctx.value.instruction) {
+      ctx.issues.push({
+        code: 'custom',
+        message: 'Instruction must be present when file is.',
+        input: ctx.value,
+      })
+    }
+
+    // Verify text and instruction aren't both present.
     if (!ctx.value.text && !ctx.value.instruction) {
       ctx.issues.push({
         code: 'custom',
@@ -55,18 +77,24 @@ const PromptSchema = z
         input: ctx.value,
       })
     }
+
+    // Verify file and text aren't both present.
+    if (ctx.value.text && ctx.value.file) {
+      ctx.issues.push({
+        code: 'custom',
+        message: 'File and text cannot both be present.',
+        input: ctx.value,
+      })
+    }
   })
 
-const ModelsFileSchema = z.object({
-  models: z.array(ModelConfigSchema),
+const PromptsFileSchema = z.object({
+  defaults: PromptsDefaultSchema,
+  prompts: z.array(PromptSchema).min(1, { message: 'At least one prompt must be defined.' }),
 })
 
-const PromptsFileSchema = z.object({
-  defaults: z.object({
-    maxTokens: z.number().int().positive(),
-    temperature: z.number().min(0).max(1),
-  }),
-  prompts: z.array(PromptSchema).min(1, { message: 'At least one prompt must be defined.' }),
+const ResolvedPromptSchema = PromptsDefaultSchema.extend(PromptIdentitySchema.shape).extend({
+  text: z.string().min(1),
 })
 //#endregion Schemas
 
@@ -74,7 +102,15 @@ const PromptsFileSchema = z.object({
 export type Providers = z.infer<typeof ProvidersSchema>
 export type ModelConfig = z.infer<typeof ModelConfigSchema>
 export type PromptConfig = z.infer<typeof PromptSchema>
+export type ResolvedPrompt = z.infer<typeof ResolvedPromptSchema>
 //#endregion Inferred Types
+
+function parseOrThrow<T>(label: string, schema: z.ZodType<T>, raw: unknown): T {
+  const result = schema.safeParse(raw)
+  if (!result.success) throw new Error(`${label} is invalid:\n${z.prettifyError(result.error)}`)
+
+  return result.data
+}
 
 async function readYaml(filePath: string) {
   const file = Bun.file(filePath)
@@ -89,13 +125,29 @@ async function readYaml(filePath: string) {
 }
 
 export async function loadConfig() {
+  const modelsPath = 'config/models.yaml'
+  const promptsPath = 'config/prompts.yaml'
+
   const [modelsYaml, promptsYaml] = await Promise.all([
-    readYaml(`${ROOT}/config/models.yaml`),
-    readYaml(`${ROOT}/config/prompts.yaml`),
+    readYaml(`${ROOT}/${modelsPath}`),
+    readYaml(`${ROOT}/${promptsPath}`),
   ])
 
-  const modelConfig = ModelsFileSchema.parse(modelsYaml)
-  const promptConfig = PromptsFileSchema.parse(promptsYaml)
+  const { models } = parseOrThrow(modelsPath, ModelsFileSchema, modelsYaml)
+  const { defaults, prompts } = parseOrThrow(promptsPath, PromptsFileSchema, promptsYaml)
 
-  return { modelConfig, promptConfig }
+  const resolvedPrompts = await Promise.all(
+    prompts.map(async ({ maxTokens, temperature, text, file, instruction, ...rest }) => {
+      const body = file ? await Bun.file(`${ROOT}/${file}`).text() : text
+
+      return parseOrThrow(`prompt ${rest.id}`, ResolvedPromptSchema, {
+        ...rest,
+        maxTokens: maxTokens ?? defaults.maxTokens,
+        temperature: temperature ?? defaults.temperature,
+        text: instruction ? `${body}\n\n${instruction}` : body,
+      })
+    }),
+  )
+
+  return { models, prompts: resolvedPrompts }
 }
