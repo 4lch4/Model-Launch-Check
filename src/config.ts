@@ -4,6 +4,8 @@ import { z } from 'zod'
 const ROOT = `${import.meta.dir}/..`
 
 //#region Schemas
+const ProvidersSchema = z.enum(['openrouter', 'anthropic'])
+
 const PricingSchema = z.object({
   inputPerM: z.number().positive(),
   outputPerM: z.number().positive(),
@@ -11,7 +13,7 @@ const PricingSchema = z.object({
 
 const ModelConfigSchema = z
   .object({
-    provider: z.string(),
+    provider: ProvidersSchema,
     id: z.string(),
     label: z.string(),
     dev: z.boolean().optional().describe('Whether or not to run this model in dev mode.'),
