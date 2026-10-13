@@ -1,16 +1,16 @@
 {
   "name": "model-launch-check",
   "version": "0.1.0",
+  "private": true,
   "description": "Run the same prompts across models via OpenRouter and Anthropic, and compare quality, latency and cost",
   "type": "module",
-  "private": true,
   "scripts": {
-    "start": "bun run src/index.ts",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
+    "check": "bun run typecheck && bun run lint && bun run format:check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "bun run typecheck && bun run lint && bun run format:check"
+    "lint": "eslint .",
+    "start": "bun run src/index.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",

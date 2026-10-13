@@ -21,6 +21,6 @@ export default {
   endOfLine: 'lf',
   plugins: [
     require.resolve('prettier-plugin-organize-imports'),
-    require.resolve('prettier-plugin-packagejson')
+    require.resolve('prettier-plugin-packagejson'),
   ],
 }
