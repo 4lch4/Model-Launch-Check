@@ -17,7 +17,7 @@ const ChunkSchema = z.object({
         delta: z.object({
           content: z.string().nullish(),
           reasoning: z.string().nullish(),
-        }),
+        }).nullish(),
         finish_reason: z.string().nullish(),
       }),
     )
@@ -65,6 +65,14 @@ export class OpenRouterProvider implements Provider {
         if (!parsed.success) continue
 
         const { choices, error, usage } = parsed.data
+        const choice = choices?.[0]
+
+        // Record usage even if there was a failure.
+        if (usage) {
+          result.inputTokens = usage.prompt_tokens ?? null
+          result.outputTokens = usage.completion_tokens ?? null
+          result.costUsd = usage.cost ?? null
+        }
 
         if (error) {
           throw new RequestError(error.message, 'stream', {
@@ -73,13 +81,15 @@ export class OpenRouterProvider implements Provider {
           })
         }
 
-        if (usage) {
-          result.inputTokens = usage.prompt_tokens ?? null
-          result.outputTokens = usage.completion_tokens ?? null
-          result.costUsd = usage.cost ?? null
+        // Extra check in case only the finish reason comes through a chunk without a full error object.
+        if (choice?.finish_reason === 'error') {
+          throw new RequestError('Stream ended with finish_reason: error', 'stream', {
+            streamed: result.text.length > 0,
+            partial: result,
+          })
         }
 
-        const text = choices?.[0]?.delta?.content
+        const text = choice?.delta?.content
         if (!text) continue
 
         if (result.ttftMs === null) result.ttftMs = Math.round(performance.now() - started)
