@@ -73,7 +73,7 @@ src/
 
 ```ts
 type RunResult = {
-  provider: "openrouter" | "anthropic"
+  provider: 'openrouter' | 'anthropic'
   model: string // model id as configured
   label: string // display name from models.yaml
   promptId: string
@@ -88,11 +88,7 @@ type RunResult = {
 }
 
 type Provider = {
-  run(
-    model: ModelConfig,
-    prompt: PromptConfig,
-    signal: AbortSignal,
-  ): Promise<RunResult>
+  run(model: ModelConfig, prompt: PromptConfig, signal: AbortSignal): Promise<RunResult>
 }
 ```
 
