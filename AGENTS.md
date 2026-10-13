@@ -1,7 +1,7 @@
 # model-launch-check
 
 TypeScript (Bun) CLI that runs the same prompts across models via OpenRouter and Anthropic's
-Messages API and reports quality, latency and cost side by side.
+Messages API and reports quality, latency, and cost side by side.
 
 **Read `SCOPE.md` first.** It defines the four boxes, the design and the cut list.
 
@@ -17,7 +17,7 @@ Messages API and reports quality, latency and cost side by side.
 
 ## Rules
 
-- Prettier with no semicolons (`.prettierrc`). Run `bun run format` before committing.
+- Prettier with no semicolons (`.prettierrc.mjs`). Run `bun run format` before committing.
 - Markdown lines at most 100 characters.
 - Every provider returns the `RunResult` shape from `src/types.ts`. Nothing downstream of the
   providers may know which provider produced a result.
