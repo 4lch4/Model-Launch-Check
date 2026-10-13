@@ -1,0 +1,35 @@
+# Models to run. Prices are USD per 1M tokens.
+# OpenRouter returns cost per request, so OpenRouter entries need no prices.
+# Direct providers return tokens only, so their entries must list prices.
+# Prices checked 2026-10-13: https://openrouter.ai/models and
+# https://platform.claude.com/docs/en/about-claude/pricing
+
+models:
+  # --- Through OpenRouter ---
+  - provider: openrouter
+    id: anthropic/claude-haiku-5.5
+    label: Haiku 5.5 (OpenRouter)
+    dev: true # include in cheap dev runs (--dev)
+
+  - provider: openrouter
+    id: openai/gpt-6-luna
+    label: GPT-6 Luna (OpenRouter)
+    dev: true
+
+  - provider: openrouter
+    id: deepseek/deepseek-v4.1-flash
+    label: DeepSeek V4.1 Flash (OpenRouter)
+
+  - provider: openrouter
+    id: anthropic/claude-sonnet-5.5
+    label: Sonnet 5.5 (OpenRouter)
+
+  # --- Direct ---
+  # Same model as the OpenRouter Sonnet entry, so the report compares
+  # one model through OpenRouter against the provider directly.
+  - provider: anthropic
+    id: claude-sonnet-5-5
+    label: Sonnet 5.5 (Anthropic direct)
+    pricing:
+      inputPerM: 2.0
+      outputPerM: 10.0

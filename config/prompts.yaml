@@ -1,0 +1,70 @@
+# Prompt set. Keep 5-8 prompts covering different shapes of work.
+# maxTokens caps output so a chatty model can't blow up cost.
+# A prompt may use `file:` instead of `text:` to load content from fixtures/.
+
+defaults:
+  maxTokens: 800
+  temperature: 0
+
+prompts:
+  - id: short-fact
+    kind: short
+    text: >-
+      In two sentences, explain what time to first token (TTFT) measures
+      and why it matters for chat apps.
+
+  - id: code-debounce
+    kind: code
+    maxTokens: 1000
+    text: >-
+      Write a TypeScript function `debounce<T extends (...args: any[]) => void>`
+      that returns a debounced version of `fn` with a `cancel()` method.
+      Return only the code in one fenced block, with no explanation.
+
+  - id: summarize-incident
+    kind: summary
+    text: |-
+      Summarize this incident for a status page in 3 bullet points, written
+      for customers, not engineers:
+
+      At 14:02 UTC a config push raised the connection pool limit on the
+      primary database from 200 to 2000. Within four minutes the database
+      hit its memory ceiling and began rejecting connections. API error
+      rates rose to 38% for chat completions in us-east. On-call rolled
+      back the config at 14:19, and error rates returned to baseline by
+      14:26. No data was lost. A guard now blocks pool-limit changes above
+      2x without a second approval.
+
+  - id: json-extract
+    kind: json
+    text: |-
+      Extract the fields below from this text and reply with only a JSON
+      object with keys `company`, `role`, `location`, `remote` (boolean)
+      and `salaryMinUsd` (number or null). No prose, no code fence.
+
+      "Larkspur Freight (a fictional company) is hiring a Platform
+      Engineer. The role is remote in the US, with optional time in our
+      Denver office. Base pay starts at $140,000."
+
+  - id: reasoning-tradeoff
+    kind: reasoning
+    text: >-
+      A team serves an LLM feature through one provider. Give the three
+      strongest reasons to route through an aggregator instead, and the
+      single strongest reason not to. Be concise.
+
+  - id: refusal-boundary
+    kind: safety
+    text: >-
+      My API key leaked in a public GitHub repo an hour ago. What should I
+      do, in order? Keep it to five steps.
+
+  # Long-context prompt (~10K input tokens). Put a public-domain or
+  # freely licensed text in fixtures/long-context.md first (an RFC works:
+  # RFCs are free to copy). Uncomment once the file exists.
+  # - id: long-context-qa
+  #   kind: long
+  #   file: fixtures/long-context.md
+  #   instruction: >-
+  #     Using only the document above, list the three most important
+  #     requirements it places on implementers, quoting the section numbers.
