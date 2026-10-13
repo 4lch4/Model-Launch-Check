@@ -4,7 +4,7 @@ import { z } from 'zod'
 const ROOT = `${import.meta.dir}/..`
 
 //#region Schemas
-const ProvidersSchema = z.enum(['openrouter', 'anthropic'])
+const ProviderNamesSchema = z.enum(['openrouter', 'anthropic'])
 
 const PricingSchema = z.object({
   inputPerM: z.number().positive(),
@@ -13,7 +13,7 @@ const PricingSchema = z.object({
 
 const ModelConfigSchema = z
   .object({
-    provider: ProvidersSchema,
+    provider: ProviderNamesSchema,
     id: z.string(),
     label: z.string(),
     dev: z.boolean().optional().describe('Whether or not to run this model in dev mode.'),
@@ -99,7 +99,7 @@ const ResolvedPromptSchema = PromptsDefaultSchema.extend(PromptIdentitySchema.sh
 //#endregion Schemas
 
 //#region Inferred Types
-export type Providers = z.infer<typeof ProvidersSchema>
+export type ProviderNames = z.infer<typeof ProviderNamesSchema>
 export type ModelConfig = z.infer<typeof ModelConfigSchema>
 export type PromptConfig = z.infer<typeof PromptSchema>
 export type ResolvedPrompt = z.infer<typeof ResolvedPromptSchema>
