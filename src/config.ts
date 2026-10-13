@@ -38,6 +38,7 @@ const PromptSchema = z
     maxTokens: z.number().int().positive().optional(),
     instruction: z.string().optional(), // Must be present with File if Text isn't.
     file: z.string().optional(), // Must be present with Instruction if Text isn't.
+    temperature: z.number().min(0).max(1).optional(),
   })
   .check(ctx => {
     if (ctx.value.instruction && !ctx.value.file) {
