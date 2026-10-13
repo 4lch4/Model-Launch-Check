@@ -17,4 +17,3 @@ jobs:
       - run: bun run typecheck
       - run: bun run lint
       - run: bun run format:check
-      # No model calls in CI: they cost money and need secrets.
