@@ -1,9 +1,22 @@
 #!/usr/bin/env bun
+import { parseArgs } from 'node:util'
 import { loadConfig, type ProviderNames } from './config'
 import { createProvider } from './providers'
+import { runAll } from './runner'
 import type { Provider } from './types'
 
 const providers = new Map<ProviderNames, Provider>()
+
+const { values } = parseArgs({
+  args: Bun.argv.slice(2),
+  options: {
+    dev: { type: 'boolean' },
+    models: { type: 'string' },
+    prompts: { type: 'string' },
+    runs: { type: 'string' },
+    concurrency: { type: 'string' },
+  },
+})
 
 // Used to make sure we only instantiate each provider once per run, not once per model test.
 function getProvider(name: ProviderNames): Provider {
@@ -17,15 +30,40 @@ function getProvider(name: ProviderNames): Provider {
 }
 
 async function main() {
-  const { models, prompts } = await loadConfig()
+  const { models: allModels, prompts: allPrompts } = await loadConfig()
 
-  // Only get dev models for an initial test
-  for (const model of models.filter(m => m.dev)) {
-    const provider = getProvider(model.provider)
-    const result = await provider.run(model, prompts[0]!, AbortSignal.timeout(60_000)) // 60s timeout
+  const runs = Number(values.runs ?? 1)
+  const modelIds = values.models?.split(',') ?? []
+  const promptIds = values.prompts?.split(',') ?? []
 
-    console.log(result)
-  }
+  let models = values.dev ? allModels.filter(m => m.dev) : allModels
+  if (modelIds.length) models = models.filter(m => modelIds.includes(m.id))
+
+  let prompts = allPrompts
+  if (promptIds.length) prompts = prompts.filter(p => promptIds.includes(p.id))
+
+  const jobs = models.flatMap(model =>
+    prompts.flatMap(prompt => Array.from({ length: runs }, () => ({ model, prompt }))),
+  )
+
+  console.log(`${models.length} models x ${prompts.length} prompts x ${runs} run(s)`)
+
+  const results = await runAll(jobs, getProvider, {
+    concurrency: Number(values.concurrency ?? 2),
+    timeoutMs: 60_000,
+  })
+
+  console.table(
+    results.map(({ label, promptId, ttftMs, totalMs, costUsd, attempts, error }) => ({
+      label,
+      promptId,
+      ttftMs,
+      totalMs,
+      costUsd,
+      attempts,
+      error: error ?? '',
+    })),
+  )
 }
 
 main().catch(err => {
