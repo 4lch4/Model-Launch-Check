@@ -72,6 +72,6 @@ function logResult(result: RunResult) {
 
   console.log(
     `[runner][info]: ${result.label} / ${result.promptId}: ` +
-      `ttft ${result.ttftMs}ms, total ${result.totalMs}, $${result.costUsd?.toFixed(5)}`,
+      `ttft ${result.ttftMs}ms, total ${result.totalMs}ms, $${result.costUsd?.toFixed(5)}`,
   )
 }
