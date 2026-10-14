@@ -30,6 +30,7 @@ models:
     id: anthropic/claude-sonnet-5.5
     label: Sonnet 5.5 (OpenRouter)
     family: sonnet-5.5
+    supportsTemperature: false
 
   # --- Direct ---
   # Same model as the OpenRouter Sonnet entry, so the report compares
@@ -38,6 +39,7 @@ models:
     id: claude-sonnet-5-5
     label: Sonnet 5.5 (Anthropic direct)
     family: sonnet-5.5
+    supportsTemperature: false
     pricing:
       inputPerM: 2.0
       outputPerM: 10.0

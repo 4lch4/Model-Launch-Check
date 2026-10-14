@@ -19,6 +19,12 @@ const ModelConfigSchema = z
     dev: z.boolean().optional().describe('Whether or not to run this model in dev mode.'),
     pricing: PricingSchema.optional(),
     family: z.string().optional().describe('Models sharing a family are compared in the report.'),
+    supportsTemperature: z
+      .boolean()
+      .optional()
+      .describe(
+        'Set false for models that reject the temperature parameter. Defaults to sending it.',
+      ),
   })
   .check(ctx => {
     if (ctx.value.provider !== 'openrouter' && !ctx.value.pricing) {

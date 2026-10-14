@@ -1,7 +1,8 @@
-import { APIConnectionError, APIError, APIUserAbortError, type OpenAI } from 'openai'
+import { type OpenAI } from 'openai'
 import { z } from 'zod'
 import type { ModelConfig, ResolvedPrompt } from '../config'
 import { type Provider, RequestError, type RunResult } from '../types'
+import { toRequestError } from './request-error'
 
 const UsageSchema = z.object({
   prompt_tokens: z.number().nullish(),
@@ -54,7 +55,9 @@ export class OpenRouterProvider implements Provider {
           model: model.id,
           messages: [{ role: 'user', content: prompt.text }],
           max_completion_tokens: prompt.maxTokens,
-          temperature: prompt.temperature,
+          // Mirrors the direct route: models.yaml decides, so a model compared across
+          // both routes is measured under identical sampling settings.
+          ...(model.supportsTemperature === false ? {} : { temperature: prompt.temperature }),
           stream: true,
           stream_options: { include_usage: true },
         },

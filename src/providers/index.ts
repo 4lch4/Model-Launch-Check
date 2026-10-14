@@ -1,7 +1,9 @@
+import { Anthropic } from '@anthropic-ai/sdk'
 import { OpenAI } from 'openai'
 
 import type { ProviderNames } from '../config'
 import type { Provider } from '../types'
+import { AnthropicProvider } from './anthropic'
 import { OpenRouterProvider } from './openrouter'
 
 export function createProvider(name: ProviderNames): Provider {
@@ -19,7 +21,13 @@ export function createProvider(name: ProviderNames): Provider {
         }),
       )
     case 'anthropic':
-      throw new Error('Anthropic provider not yet implemented.')
+      return new AnthropicProvider(
+        new Anthropic({
+          apiKey: requireEnv('ANTHROPIC_API_KEY'),
+          // No baseURL: this talks to Anthropic directly, not through an aggregator.
+          maxRetries: 0,
+        }),
+      )
   }
 }
 
