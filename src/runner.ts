@@ -36,7 +36,7 @@ const MAX_RETRY_ATTEMPTS = 3
 async function runJob(job: Job, getProvider: GetProvider, opts: RunnerOptions): Promise<RunResult> {
   const started = performance.now()
 
-  for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS ; attempt++) {
+  for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
     try {
       const provider = getProvider(job.model.provider)
       const result = await provider.run(job.model, job.prompt, AbortSignal.timeout(opts.timeoutMs))
