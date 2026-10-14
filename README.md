@@ -126,6 +126,14 @@ config/          models.yaml, prompts.yaml
 docs/adr/        architecture decision records
 ```
 
+## Model Usage
+
+This project started with a plan from Claude on how to implement it and then I wrote the code for
+the OpenRouter provider, runner, types, config logic, and initial `runner.ts`. After that I used
+Claude and Space Bunny (a stealth model) from OpenCode to analyze what I'd done, create the
+Anthropic provider and finish the `report.ts` file. After that it's been back and forth with Claude
+and Space Bunny to try and iron out anything I had missed.
+
 ## Further reading
 
 - [SCOPE.md](SCOPE.md) — what the project set out to build
