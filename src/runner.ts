@@ -31,26 +31,53 @@ export async function runAll(
   )
 }
 
+const MAX_RETRY_ATTEMPTS = 3
+
 async function runJob(job: Job, getProvider: GetProvider, opts: RunnerOptions): Promise<RunResult> {
   const started = performance.now()
 
-  try {
-    const provider = getProvider(job.model.provider)
+  for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS ; attempt++) {
+    try {
+      const provider = getProvider(job.model.provider)
+      const result = await provider.run(job.model, job.prompt, AbortSignal.timeout(opts.timeoutMs))
 
-    return await provider.run(job.model, job.prompt, AbortSignal.timeout(opts.timeoutMs))
-  } catch (error) {
-    return toFailedResult(error, job, Math.round(performance.now() - started))
+      return { ...result, attempts: attempt }
+    } catch (error) {
+      if (attempt === MAX_RETRY_ATTEMPTS || !isRetryable(error)) {
+        return toFailedResult(error, job, Math.round(performance.now() - started), attempt)
+      }
+
+      await Bun.sleep(backoffMs(attempt))
+    }
   }
+
+  throw new Error('[runner][runJob]: retry loop exited without a result')
 }
 
-function toFailedResult(error: unknown, job: Job, elapsedMs: number): RunResult {
+// ADR 0001: retry 429, 5xx, network errors and timeouts, and only while nothing has streamed.
+// Once text has arrived, a retry would double-charge and splice two answers together.
+function isRetryable(error: unknown): boolean {
+  if (!(error instanceof RequestError) || error.context.streamed) return false
+  if (error.kind === 'network' || error.kind === 'timeout') return true
+
+  const status = error.context.status
+
+  return error.kind === 'http' && status !== undefined && (status === 429 || status >= 500)
+}
+
+// 0.5 s, then 1 s, plus up to 250 ms of jitter so concurrent workers don't retry in lockstep.
+function backoffMs(attempt: number): number {
+  return 500 * 2 ** (attempt - 1) + Math.random() * 250
+}
+
+function toFailedResult(error: unknown, job: Job, elapsedMs: number, attempts: number): RunResult {
   if (error instanceof RequestError) {
-    return { ...error.context.partial, attempts: 1, error: error.message }
+    return { ...error.context.partial, attempts, error: error.message }
   }
 
   // For any failed results I haven't anticipated.
   return {
-    attempts: 1,
+    attempts,
     costUsd: null,
     error: error instanceof Error ? error.message : String(error),
     inputTokens: null,
