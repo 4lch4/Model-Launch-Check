@@ -105,19 +105,3 @@ export class OpenRouterProvider implements Provider {
     return result
   }
 }
-
-function toRequestError(error: unknown, partial: RunResult): RequestError {
-  const context = { partial, streamed: partial.text.length > 0 }
-
-  if (error instanceof RequestError) return error
-
-  if (error instanceof APIUserAbortError) return new RequestError(error.message, 'timeout', context)
-  if (error instanceof APIConnectionError) {
-    return new RequestError(error.message, 'network', context)
-  }
-  if (error instanceof APIError) {
-    return new RequestError(error.message, 'http', { ...context, status: error.status })
-  }
-
-  return new RequestError(error instanceof Error ? error.message : String(error), 'stream', context)
-}
