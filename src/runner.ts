@@ -1,6 +1,6 @@
 import type { ModelConfig, ProviderNames, ResolvedPrompt } from './config'
 import { ms, usd } from './format'
-import { RequestError, type Provider, type RunResult } from './types'
+import { type Provider, RequestError, type RunResult } from './types'
 
 export type Job = { model: ModelConfig; prompt: ResolvedPrompt }
 export type GetProvider = (name: ProviderNames) => Provider
