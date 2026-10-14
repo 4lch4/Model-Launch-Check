@@ -1,8 +1,10 @@
+import { resolve } from 'node:path'
+
 import type { ModelConfig, ProviderNames, ResolvedPrompt } from './config'
 import { groupBy, metrics, summarizeByModel, totalCostUsd } from './stats'
 import type { RunResult } from './types'
 
-const REPORTS_DIR = `${import.meta.dir}/../reports`
+const REPORTS_DIR = resolve(`${import.meta.dir}/../reports`)
 
 export async function writeReports(input: ReportInput) {
   const now = new Date().toISOString()
