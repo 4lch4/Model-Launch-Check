@@ -47,7 +47,7 @@ async function main() {
     prompts.flatMap(prompt => Array.from({ length: runs }, () => ({ model, prompt }))),
   )
 
-  console.log(`${models.length} models x ${prompts.length} prompts x ${runs} run(s)`)
+  console.log(`[index][info]: ${models.length} models x ${prompts.length} prompts x ${runs} run(s)`)
 
   const results = await runAll(jobs, getProvider, {
     concurrency: Number(values.concurrency ?? 2),
