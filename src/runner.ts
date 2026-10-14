@@ -1,4 +1,5 @@
 import type { ModelConfig, ProviderNames, ResolvedPrompt } from './config'
+import { ms, usd } from './format'
 import { RequestError, type Provider, type RunResult } from './types'
 
 export type Job = { model: ModelConfig; prompt: ResolvedPrompt }
@@ -72,6 +73,7 @@ function logResult(result: RunResult) {
 
   console.log(
     `[runner][info]: ${result.label} / ${result.promptId}: ` +
-      `ttft ${result.ttftMs}ms, total ${result.totalMs}ms, $${result.costUsd?.toFixed(5)}`,
+      `ttft ${ms(result.ttftMs, 'n/a')}, total ${ms(result.totalMs, 'n/a')}, ` +
+      `${usd(result.costUsd, 'n/a')}`,
   )
 }

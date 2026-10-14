@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 
 import type { ModelConfig, ProviderNames, ResolvedPrompt } from './config'
+import { ms, num, pct, usd } from './format'
 import { groupBy, metrics, summarizeByModel, totalCostUsd } from './stats'
 import type { RunResult } from './types'
 
@@ -65,19 +66,9 @@ function renderSummaryTable(results: RunResult[]): string {
   if (summaries.length === 0) return '_No results._'
 
   return table([
-    [
-      'Model',
-      'Provider',
-      'Median TTFT',
-      'Median total',
-      'Input tok',
-      'Output tok',
-      'Cost',
-      'Errors',
-    ],
+    ['Model', 'Median TTFT', 'Median total', 'Input tok', 'Output tok', 'Cost', 'Errors'],
     ...summaries.map(s => [
       s.label,
-      s.provider,
       ms(s.medianTtftMs),
       ms(s.medianTotalMs),
       num(s.totalInputTokens),
@@ -206,15 +197,14 @@ const PROVIDER_LABELS: Record<ProviderNames, string> = {
 // The aggregator is compared against the provider, so it goes in the left column.
 const PROVIDER_ORDER: ProviderNames[] = ['openrouter', 'anthropic']
 
-const row = (cells: string[]) => `| ${cells.join(' | ')} |`
 function table(rows: string[][]): string {
   const [head, ...body] = rows
+  if (!head) return ''
 
-  return [row(head!), row(head!.map(() => '---')), ...body.map(row)].join('\n')
+  const widths = head.map((_, i) => Math.max(...[head, ...body].map(r => (r[i] ?? '').length)))
+  const pad = (cells: string[]) =>
+    `| ${cells.map((c, i) => (c ?? '').padEnd(widths[i] ?? 0)).join(' | ')} |`
+
+  return [pad(head), pad(widths.map(w => '-'.repeat(w))), ...body.map(pad)].join('\n')
 }
-
-const ms = (n: number | null) => (n === null ? '-' : `${Math.round(n).toLocaleString()} ms`)
-const usd = (n: number | null) => (n === null ? '-' : `$${n.toFixed(5)}`)
-const pct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(0)}%`
-const num = (n: number | null) => (n === null ? '-' : n.toLocaleString())
 //#endregion Formatting Helpers
