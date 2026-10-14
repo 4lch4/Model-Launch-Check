@@ -18,6 +18,7 @@ const ModelConfigSchema = z
     label: z.string(),
     dev: z.boolean().optional().describe('Whether or not to run this model in dev mode.'),
     pricing: PricingSchema.optional(),
+    family: z.string().optional().describe('Models sharing a family are compared in the report.'),
   })
   .check(ctx => {
     if (ctx.value.provider !== 'openrouter' && !ctx.value.pricing) {
