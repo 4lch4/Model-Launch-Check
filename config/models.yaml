@@ -11,6 +11,12 @@ models:
     label: Haiku 5.5 (OpenRouter)
     dev: true # include in cheap dev runs (--dev)
 
+  # For testing the error path of an invalid model.
+  # - provider: openrouter
+  #   id: bogus/noop-0.0
+  #   label: Bogus Model (OpenRouter)
+  #   dev: true
+
   - provider: openrouter
     id: openai/gpt-6-luna
     label: GPT-6 Luna (OpenRouter)
