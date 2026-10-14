@@ -1,5 +1,5 @@
-import type { ModelConfig, ResolvedPrompt } from './config'
-import { groupBy, summarizeByModel, totalCostUsd } from './stats'
+import type { ModelConfig, ProviderNames, ResolvedPrompt } from './config'
+import { groupBy, metrics, summarizeByModel, totalCostUsd } from './stats'
 import type { RunResult } from './types'
 
 const REPORTS_DIR = `${import.meta.dir}/../reports`
@@ -17,7 +17,7 @@ export async function writeReports(input: ReportInput) {
     results: input.results,
   }
 
-  await Bun.write(`${base}.json`, JSON.stringify(json))
+  await Bun.write(`${base}.json`, JSON.stringify(json, null, 2))
   await Bun.write(`${base}.md`, renderMarkdown(input))
 
   return { md: `${base}.md`, json: `${base}.json` }
@@ -34,19 +34,26 @@ export function renderMarkdown(input: ReportInput): string {
   const byPrompt = groupBy(input.results, r => r.promptId)
 
   const sections = [
-    // renderHead
+    renderHeader(input),
+    ['## Summary', '', renderSummaryTable(input.results)].join('\n'),
+    '## Prompts',
+    ...input.prompts.map(p => renderPromptSection(p, byPrompt.get(p.id) ?? [])),
+    renderComparisonSection(input),
   ]
 
-  return ''
+  return `${sections
+    .filter(Boolean)
+    .map(s => s.trim())
+    .join('\n\n')}\n`
 }
 
 function renderHeader(input: ReportInput): string {
   const { models, prompts, results, runs } = input
 
   return [
-    `# model-launch-check report`,
+    '# model-launch-check report',
     '',
-    `_${new Date().toISOString()}_ - ${models.length} models - ${prompts.length} prompts` +
+    `_${new Date().toISOString()}_ - ${models.length} models - ${prompts.length} prompts - ` +
       `${runs} run(s) - **${usd(totalCostUsd(results))}** total`,
   ].join('\n')
 }
@@ -80,22 +87,116 @@ function renderSummaryTable(results: RunResult[]): string {
 }
 
 function renderPromptSection(prompt: ResolvedPrompt, results: RunResult[]): string {
-  const header = `### ${prompt.id} - ${prompt.kind}\n`
-
+  const sectionHeader = `### ${prompt.id} - ${prompt.kind}`
   const body = prompt.text
     .split('\n')
     .map(line => `> ${line}`)
     .join('\n')
 
-  const outputs = results.map(r => {
-    const metrics = r.error
-      ? `<summary>${r.label} - **error** - ${r.error}</summary>`
-      : `<summary>${r.label} - ttft ${ms(r.ttftMs)} - total ${ms(r.totalMs)} - ${usd(r.costUsd)}</summary>`
+  // An interrupted run leaves some prompts with no results at all.
+  if (results.length === 0) return [sectionHeader, '', body, '', '_No results._'].join('\n')
 
-    return `<details>\n${metrics}\n\n${r.text}\n\n</details>`
+  const byModel = groupBy(results, r => `${r.provider}/${r.model}`)
+
+  const blocks = [...byModel.values()].map(group => {
+    const first = group[0]!
+    const m = metrics(group)
+    const runsNote = group.length > 1 ? ` - ${group.length} runs` : ''
+
+    // The collapsed view stays one line; the full metrics sit under the output.
+    const summary = `<summary>${first.label}${runsNote} - median ttft ${ms(m.medianTtftMs)}</summary>`
+    const statLine =
+      `ttft ${ms(m.medianTtftMs)} - total ${ms(m.medianTotalMs)} - ` +
+      `${num(m.totalInputTokens)} in - ${num(m.totalOutputTokens)} out - ` +
+      `${usd(m.totalCostUsd)} total`
+
+    const outputs = group.map((r, i) => {
+      const runHead = group.length > 1 ? `**Run ${i + 1}**\n\n` : ''
+
+      return runHead + (r.error ? `**Error:** ${r.error}` : r.text)
+    })
+
+    return `<details>\n${summary}\n\n${statLine}\n\n${outputs.join('\n\n---\n\n')}\n\n</details>`
   })
 
-  return `${header}\n${body}\n\n${outputs.join('\n\n')}\n`
+  return [sectionHeader, '', body, '', blocks.join('\n\n')].join('\n')
+}
+
+function renderComparisonSection(input: ReportInput): string {
+  const families = groupBy(input.results, familyLookup(input.models))
+
+  const blocks = [...families.entries()]
+    // Only a family seen through more than one provider is comparable.
+    .filter(([, results]) => new Set(results.map(r => r.provider)).size > 1)
+    .map(([family, results]) => renderFamilyComparison(family, results))
+
+  return blocks.length > 0 ? ['## OpenRouter vs direct', '', ...blocks].join('\n') : ''
+}
+
+function renderFamilyComparison(family: string, results: RunResult[]): string {
+  const columns = [...groupBy(results, r => r.provider).entries()].map(([provider, rs]) => ({
+    label: PROVIDER_LABELS[provider],
+    m: metrics(rs),
+  }))
+
+  if (columns.length < 2) return ''
+
+  const left = columns[0]!
+  const right = columns[1]!
+
+  // Left relative to right: aggregator overhead measured against the provider.
+  const delta = (a: number | null, b: number | null) =>
+    a === null || b === null || b === 0 ? '-' : pct(((a - b) / b) * 100)
+
+  const rows: string[][] = [
+    [
+      'Median TTFT',
+      ms(left.m.medianTtftMs),
+      ms(right.m.medianTtftMs),
+      delta(left.m.medianTtftMs, right.m.medianTtftMs),
+    ],
+    [
+      'Median total',
+      ms(left.m.medianTotalMs),
+      ms(right.m.medianTotalMs),
+      delta(left.m.medianTotalMs, right.m.medianTotalMs),
+    ],
+    [
+      'Total input tokens',
+      num(left.m.totalInputTokens),
+      num(right.m.totalInputTokens),
+      delta(left.m.totalInputTokens, right.m.totalInputTokens),
+    ],
+    [
+      'Total output tokens',
+      num(left.m.totalOutputTokens),
+      num(right.m.totalOutputTokens),
+      delta(left.m.totalOutputTokens, right.m.totalOutputTokens),
+    ],
+    [
+      'Total cost',
+      usd(left.m.totalCostUsd),
+      usd(right.m.totalCostUsd),
+      delta(left.m.totalCostUsd, right.m.totalCostUsd),
+    ],
+  ]
+
+  return [`### ${family}`, '', table([['Metric', left.label, right.label, 'Delta'], ...rows])].join(
+    '\n',
+  )
+}
+
+// Models sharing a family are the same model reached through different providers.
+function familyLookup(models: ModelConfig[]): (r: RunResult) => string {
+  const byKey = new Map(models.map(m => [`${m.provider}/${m.id}`, m.family ?? m.label]))
+
+  return r => byKey.get(`${r.provider}/${r.model}`) ?? r.label
+}
+
+//#region Formatting Helpers
+const PROVIDER_LABELS: Record<ProviderNames, string> = {
+  openrouter: 'OpenRouter',
+  anthropic: 'Anthropic direct',
 }
 
 const row = (cells: string[]) => `| ${cells.join(' | ')} |`
@@ -105,7 +206,6 @@ function table(rows: string[][]): string {
   return [row(head!), row(head!.map(() => '---')), ...body.map(row)].join('\n')
 }
 
-//#region Formatting Helpers
 const ms = (n: number | null) => (n === null ? '-' : `${Math.round(n).toLocaleString()} ms`)
 const usd = (n: number | null) => (n === null ? '-' : `$${n.toFixed(5)}`)
 const pct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(0)}%`
