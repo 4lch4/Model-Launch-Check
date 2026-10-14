@@ -106,6 +106,7 @@ export type PromptConfig = z.infer<typeof PromptSchema>
 export type ResolvedPrompt = z.infer<typeof ResolvedPromptSchema>
 //#endregion Inferred Types
 
+//#region Helper Functions
 function parseOrThrow<T>(label: string, schema: z.ZodType<T>, raw: unknown): T {
   const result = schema.safeParse(raw)
   if (!result.success) throw new Error(`${label} is invalid:\n${z.prettifyError(result.error)}`)
@@ -124,6 +125,7 @@ async function readYaml(filePath: string) {
     throw new Error(`Failed to read YAML file: ${filePath}. Error: ${error}`, { cause: error })
   }
 }
+//#endregion Helper Functions
 
 export async function loadConfig() {
   const modelsPath = 'config/models.yaml'

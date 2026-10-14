@@ -2,6 +2,7 @@
 import { parseArgs } from 'node:util'
 import { loadConfig, type ProviderNames } from './config'
 import { createProvider } from './providers'
+import { writeReports } from './report'
 import { runAll } from './runner'
 import type { Provider } from './types'
 
@@ -64,6 +65,9 @@ async function main() {
       error: error ?? '',
     })),
   )
+
+  const { md: mdReportFile } = await writeReports({ results, prompts, models, runs })
+  console.log(`\nMarkdown report written to: ${mdReportFile}`)
 }
 
 main().catch(err => {
