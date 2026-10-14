@@ -136,17 +136,18 @@ function renderComparisonSection(input: ReportInput): string {
 }
 
 function renderFamilyComparison(family: string, results: RunResult[]): string {
-  const columns = [...groupBy(results, r => r.provider).entries()].map(([provider, rs]) => ({
-    label: PROVIDER_LABELS[provider],
-    m: metrics(rs),
-  }))
+  const columns = [...groupBy(results, r => r.provider).entries()]
+    .map(([provider, rs]) => ({ provider, label: PROVIDER_LABELS[provider], m: metrics(rs) }))
+    // Fixed order so the aggregator is always the left column. Group order follows
+    // result order, which sorts by label, and would otherwise flip with the names.
+    .sort((a, b) => PROVIDER_ORDER.indexOf(a.provider) - PROVIDER_ORDER.indexOf(b.provider))
 
   if (columns.length < 2) return ''
 
   const left = columns[0]!
   const right = columns[1]!
 
-  // Left relative to right: aggregator overhead measured against the provider.
+  // Left relative to right, so the delta is the aggregator measured against the provider.
   const delta = (a: number | null, b: number | null) =>
     a === null || b === null || b === 0 ? '-' : pct(((a - b) / b) * 100)
 
@@ -183,9 +184,11 @@ function renderFamilyComparison(family: string, results: RunResult[]): string {
     ],
   ]
 
-  return [`### ${family}`, '', table([['Metric', left.label, right.label, 'Delta'], ...rows])].join(
-    '\n',
-  )
+  return [
+    `### ${family}`,
+    '',
+    table([['Metric', left.label, right.label, `Delta vs ${right.label}`], ...rows]),
+  ].join('\n')
 }
 
 // Models sharing a family are the same model reached through different providers.
@@ -200,6 +203,8 @@ const PROVIDER_LABELS: Record<ProviderNames, string> = {
   openrouter: 'OpenRouter',
   anthropic: 'Anthropic direct',
 }
+// The aggregator is compared against the provider, so it goes in the left column.
+const PROVIDER_ORDER: ProviderNames[] = ['openrouter', 'anthropic']
 
 const row = (cells: string[]) => `| ${cells.join(' | ')} |`
 function table(rows: string[][]): string {
