@@ -86,6 +86,8 @@ function toFailedResult(error: unknown, job: Job, elapsedMs: number, attempts: n
     outputTokens: null,
     promptId: job.prompt.id,
     provider: job.model.provider,
+    rawStopReason: null,
+    stopReason: null,
     text: '',
     totalMs: elapsedMs,
     ttftMs: null,

@@ -33,6 +33,11 @@ A full run across all five models costs roughly **$0.04**. Reports are written t
   response. For a reasoning model this makes TTFT look worse than the API's own numbers,
   which is the honest answer for a chat UI.
 - **Total** is when the stream ends.
+- **Stop reason** is why the stream ended, normalized to one vocabulary across providers
+  (`complete`, `length`, `tool_use`, `refusal`, `error`, `other`), with the provider's own raw
+  value kept alongside it for debugging. A `length` stop means the token limit cut the answer
+  short: it is counted per model in the summary table as `Truncated`, and the report calls out
+  separately the cases where truncation left no visible text at all.
 - **Cost** is taken from the provider wherever the provider reports it. OpenRouter returns a
   `cost` figure on its final stream chunk. The Messages API returns no cost, so it is computed
   from the per-model prices in `config/models.yaml`.
@@ -72,9 +77,11 @@ the entire gap.
 total.
 
 **Reasoning models can spend an entire budget and return nothing.** On some prompts, DeepSeek V4.1
-Flash hit the 800-token cap on reasoning and emitted zero visible characters. That is recorded as
-`ttftMs: null` with a non-zero cost, which is the signal worth watching: you were billed for output
-nobody received. It did not occur in the sample run above, but showed up repeatedly in earlier ones.
+Flash hit the 800-token cap on reasoning and emitted zero visible characters. That is recorded
+directly as a `length` stop reason with `ttftMs: null` and a non-zero cost, which is the signal
+worth watching: you were billed for output nobody received. The summary counts it as truncated and
+the report flags it by name. It did not occur in the sample run above, but showed up repeatedly in
+earlier ones.
 
 ## Adding a model
 
