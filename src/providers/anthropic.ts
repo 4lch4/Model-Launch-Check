@@ -1,7 +1,7 @@
 import type { Anthropic } from '@anthropic-ai/sdk'
 
 import type { ModelConfig, ResolvedPrompt } from '../config'
-import type { Provider, RunResult } from '../types'
+import type { Provider, RunResult, StopReason } from '../types'
 import { toRequestError } from './request-error'
 
 export class AnthropicProvider implements Provider {
@@ -20,6 +20,8 @@ export class AnthropicProvider implements Provider {
       outputTokens: null,
       promptId: prompt.id,
       provider: 'anthropic',
+      rawStopReason: null,
+      stopReason: null,
       text: '',
       totalMs: 0,
       ttftMs: null,
@@ -54,9 +56,15 @@ export class AnthropicProvider implements Provider {
             break
 
           case 'message_delta':
-            // Cumulative, so the last one we see is the real total. stop_reason is not
-            // recorded: a max_tokens truncation is indistinguishable from a clean stop.
+            // Cumulative, so the last one we see is the real total. The stop reason arrives
+            // here too: message_start always carries null, so this event is the only place
+            // it is reported.
             result.outputTokens = event.usage.output_tokens
+
+            if (event.delta.stop_reason) {
+              result.rawStopReason = event.delta.stop_reason
+              result.stopReason = toStopReason(event.delta.stop_reason)
+            }
             break
         }
       }
@@ -68,6 +76,25 @@ export class AnthropicProvider implements Provider {
     }
 
     return result
+  }
+}
+
+// Typed as string so a stop_reason the SDK adds later lands in 'other' instead of
+// failing the build.
+function toStopReason(reason: string): StopReason {
+  switch (reason) {
+    case 'end_turn':
+    case 'stop_sequence':
+      return 'complete'
+    case 'max_tokens':
+    case 'model_context_window_exceeded':
+      return 'length'
+    case 'tool_use':
+      return 'tool_use'
+    case 'refusal':
+      return 'refusal'
+    default:
+      return 'other'
   }
 }
 

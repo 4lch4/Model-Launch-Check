@@ -39,6 +39,7 @@ export function renderMarkdown(input: ReportInput): string {
   const sections = [
     renderHeader(input),
     ['## Summary', '', renderSummaryTable(input.results)].join('\n'),
+    renderTruncationSection(input.results),
     '## Prompts',
     ...input.prompts.map(p => renderPromptSection(p, byPrompt.get(p.id) ?? [])),
     renderComparisonSection(input),
@@ -66,7 +67,16 @@ function renderSummaryTable(results: RunResult[]): string {
   if (summaries.length === 0) return '_No results._'
 
   return table([
-    ['Model', 'Median TTFT', 'Median total', 'Input tok', 'Output tok', 'Cost', 'Errors'],
+    [
+      'Model',
+      'Median TTFT',
+      'Median total',
+      'Input tok',
+      'Output tok',
+      'Cost',
+      'Errors',
+      'Truncated',
+    ],
     ...summaries.map(s => [
       s.label,
       ms(s.medianTtftMs),
@@ -75,8 +85,28 @@ function renderSummaryTable(results: RunResult[]): string {
       num(s.totalOutputTokens),
       usd(s.totalCostUsd),
       `${s.errors}/${s.runs}`,
+      `${s.truncated}/${s.runs}`,
     ]),
   ])
+}
+
+// The expensive failure mode: a reasoning model burns the whole budget and the user sees
+// nothing, but the tokens are billed either way.
+function renderTruncationSection(results: RunResult[]): string {
+  const empty = results.filter(r => r.stopReason === 'length' && r.text.trim() === '')
+  if (empty.length === 0) return ''
+
+  return [
+    '## Truncated before any visible text',
+    '',
+    'These responses hit the token limit before producing any visible output. The output ' +
+      'tokens were still billed.',
+    '',
+    table([
+      ['Model', 'Prompt', 'Output tok', 'Cost'],
+      ...empty.map(r => [r.label, r.promptId, num(r.outputTokens), usd(r.costUsd)]),
+    ]),
+  ].join('\n')
 }
 
 function renderPromptSection(prompt: ResolvedPrompt, results: RunResult[]): string {
@@ -106,13 +136,22 @@ function renderPromptSection(prompt: ResolvedPrompt, results: RunResult[]): stri
     const outputs = group.map((r, i) => {
       const runHead = group.length > 1 ? `**Run ${i + 1}**\n\n` : ''
 
-      return runHead + (r.error ? `**Error:** ${r.error}` : r.text)
+      return `${runHead}${renderStopLine(r)}\n\n${r.error ? `**Error:** ${r.error}` : r.text}`
     })
 
     return `<details>\n${summary}\n\n${statLine}\n\n${outputs.join('\n\n---\n\n')}\n\n</details>`
   })
 
   return [sectionHeader, '', body, '', blocks.join('\n\n')].join('\n')
+}
+
+// The raw value only earns its place when it says something the normalized one does not.
+function renderStopLine(r: RunResult): string {
+  const stop = r.stopReason ?? '-'
+  const raw =
+    r.rawStopReason === null || r.rawStopReason === r.stopReason ? '' : ` (${r.rawStopReason})`
+
+  return `_stop: ${stop}${raw}_`
 }
 
 function renderComparisonSection(input: ReportInput): string {

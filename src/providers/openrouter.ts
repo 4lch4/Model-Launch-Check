@@ -1,7 +1,7 @@
 import { type OpenAI } from 'openai'
 import { z } from 'zod'
 import type { ModelConfig, ResolvedPrompt } from '../config'
-import { type Provider, RequestError, type RunResult } from '../types'
+import { type Provider, RequestError, type RunResult, type StopReason } from '../types'
 import { toRequestError } from './request-error'
 
 const UsageSchema = z.object({
@@ -21,6 +21,7 @@ const ChunkSchema = z.object({
           })
           .nullish(),
         finish_reason: z.string().nullish(),
+        native_finish_reason: z.string().nullish(),
       }),
     )
     .nullish(),
@@ -44,6 +45,8 @@ export class OpenRouterProvider implements Provider {
       outputTokens: null,
       promptId: prompt.id,
       provider: 'openrouter',
+      rawStopReason: null,
+      stopReason: null,
       text: '',
       totalMs: 0,
       ttftMs: null,
@@ -78,6 +81,14 @@ export class OpenRouterProvider implements Provider {
           result.costUsd = usage.cost ?? null
         }
 
+        // Same for the stop reason, so an error's partial result still says why it ended.
+        // OpenRouter reports the underlying provider's own reason in native_finish_reason;
+        // keep it, and keep the last non-null value a stream reports.
+        if (choice?.finish_reason) {
+          result.stopReason = toStopReason(choice.finish_reason)
+          result.rawStopReason = choice.native_finish_reason ?? choice.finish_reason
+        }
+
         if (error) {
           throw new RequestError(error.message, 'stream', {
             streamed: result.text.length > 0,
@@ -106,5 +117,24 @@ export class OpenRouterProvider implements Provider {
     }
 
     return result
+  }
+}
+
+// OpenRouter's finish_reason, which is normalized in OpenAI terms but may also carry a
+// provider-specific reason that only native_finish_reason spells out.
+function toStopReason(reason: string): StopReason {
+  switch (reason) {
+    case 'stop':
+      return 'complete'
+    case 'length':
+      return 'length'
+    case 'tool_calls':
+      return 'tool_use'
+    case 'content_filter':
+      return 'refusal'
+    case 'error':
+      return 'error'
+    default:
+      return 'other'
   }
 }
