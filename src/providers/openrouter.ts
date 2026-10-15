@@ -59,7 +59,6 @@ export class OpenRouterProvider implements Provider {
           // both routes is measured under identical sampling settings.
           ...(model.supportsTemperature === false ? {} : { temperature: prompt.temperature }),
           stream: true,
-          stream_options: { include_usage: true },
         },
         { signal },
       )
