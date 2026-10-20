@@ -4,6 +4,7 @@ import type { RunResult } from './types'
 export type Metrics = {
   runs: number
   errors: number
+  truncated: number // stopped on the token limit; still counted in latency and cost below
   medianTtftMs: number | null
   medianTotalMs: number | null
   totalInputTokens: number | null
@@ -31,6 +32,7 @@ export function metrics(results: RunResult[]): Metrics {
   return {
     runs: results.length,
     errors: results.length - ok.length,
+    truncated: results.filter(r => r.stopReason === 'length').length,
     medianTtftMs: median(ok.flatMap(r => (r.ttftMs === null ? [] : [r.ttftMs]))),
     medianTotalMs: median(ok.map(r => r.totalMs)),
     totalInputTokens: sum(ok.map(r => r.inputTokens)),

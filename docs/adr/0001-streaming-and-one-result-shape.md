@@ -46,6 +46,8 @@ their own provider dashboards report, which is the honest number for a chat UI.
 **Normalize every provider into one `RunResult`** before anything else consumes it:
 
 ```ts
+type StopReason = 'complete' | 'length' | 'tool_use' | 'refusal' | 'error' | 'other'
+
 type RunResult = {
   provider: ProviderNames
   model: string
@@ -58,6 +60,8 @@ type RunResult = {
   outputTokens: number | null
   costUsd: number | null
   attempts: number
+  stopReason: StopReason | null
+  rawStopReason: string | null // the provider's own value, for debugging
   error?: string
 }
 ```
@@ -95,7 +99,9 @@ recorded as an error instead. `attempts` is written by the runner and means what
   report says so, and `--runs` exists to take medians over repeats.
 - Reasoning models are recorded with `ttftMs: null` when they spend their whole token budget on
   reasoning and return no visible text. That is a real and expensive outcome, not a measurement
-  failure, and it is worth surfacing rather than normalizing away.
+  failure, and it is worth surfacing rather than normalizing away. The stop reason records the
+  truncation directly, and the report flags truncations that produced no visible output at all,
+  together with what they cost.
 - Cost is trustworthy across providers only because the source is recorded per provider: a
   reported figure for OpenRouter, a computed figure from configured prices for Anthropic. The
   comparison table is explicit about which is which by construction — it only ever compares
