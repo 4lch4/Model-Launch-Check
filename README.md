@@ -48,7 +48,8 @@ A full report from an earlier three-run pass is in
 
 ## Sample run
 
-Five models, six prompts, one run each, `$0.0431` total, no errors.
+Five models, six prompts, one run each, `$0.0431` total, no errors. This run predates
+stop-reason tracking, so its table has no `Truncated` column.
 
 | Model                            | Median TTFT | Median total | Input tok | Output tok | Cost     | Errors |
 | -------------------------------- | ----------- | ------------ | --------- | ---------- | -------- | ------ |
@@ -77,7 +78,7 @@ In the earlier three-run report the sign flips: OpenRouter returned 181 fewer ou
 and cost `$0.00181` less.
 
 **Aggregation overhead shows up in TTFT, not in total latency.** +26% on first token against +6% on
-total.
+total. This is one run of six prompts, so treat the percentages as rough.
 
 **Reasoning models can spend an entire budget and return nothing.** On some prompts, DeepSeek V4.1
 Flash hit the 800-token cap on reasoning and emitted zero visible characters. That is recorded

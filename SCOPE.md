@@ -92,8 +92,8 @@ type Provider = {
 }
 ```
 
-Same idea as AI-Usage: normalize every provider into one format, and everything downstream
-(stats, report) only knows `RunResult`.
+Normalize every provider into one format, so everything downstream (stats, report) only knows
+`RunResult`.
 
 ### Timing
 
