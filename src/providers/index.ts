@@ -16,7 +16,7 @@ export function createProvider(name: ProviderNames): Provider {
           maxRetries: 0,
           defaultHeaders: {
             'HTTP-Referer': 'https://github.com/4lch4/model-launch-check',
-            'X-Title': 'model-launch-check',
+            'X-OpenRouter-Title': 'model-launch-check',
           },
         }),
       )
