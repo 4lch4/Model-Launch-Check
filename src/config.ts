@@ -23,7 +23,7 @@ const ModelConfigSchema = z
       .boolean()
       .optional()
       .describe(
-        'Set false for models that reject the temperature parameter. Defaults to sending it.',
+        'Set true for models that honor the temperature parameter. Defaults to not sending it.',
       ),
   })
   .check(ctx => {

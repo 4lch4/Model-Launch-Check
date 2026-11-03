@@ -99,12 +99,15 @@ the schema in `src/config.ts`:
   id: anthropic/claude-sonnet-5.5
   label: Sonnet 5.5 (OpenRouter)
   family: sonnet-5.5 # models sharing a family get compared in the report
-  supportsTemperature: false # this model rejects the parameter
 ```
 
-`supportsTemperature` exists because Sonnet 5.5 deprecated `temperature` and rejects it with a 400,
-while OpenRouter silently drops it. It is set on **both** Sonnet entries so the two routes are
-measured under identical settings rather than quietly differing.
+`supportsTemperature` is opt-in: temperature is sent only when an entry sets it to `true`, and
+omitted otherwise. Anthropic deprecated `temperature` on Claude 4.7 and later, where any
+non-default value is a 400, and OpenRouter silently drops the parameter for models that don't
+list it in `supported_parameters` — so sending it by default made the "temperature 0" setting
+misleading. Set `supportsTemperature: true` only for models whose OpenRouter
+`supported_parameters` include `temperature` (as `deepseek/deepseek-v4.1-flash` does). The two
+Sonnet entries leave it unset, so both routes are measured under identical settings.
 
 ## Design notes
 
@@ -153,3 +156,4 @@ to get hands-on with the Messages API.
 - [SCOPE.md](SCOPE.md) — what the project set out to build
 - [ADR 0001](docs/adr/0001-streaming-and-one-result-shape.md) — why stream, why one shape, why
   retries off
+- [ADR 0002](docs/adr/0002-temperature-opt-in.md) — why temperature is opt-in per model

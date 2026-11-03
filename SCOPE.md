@@ -107,7 +107,8 @@ Same idea as AI-Usage: normalize every provider into one format, and everything 
 
 - `new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey, maxRetries: 0 })`
 - Optional attribution headers: `HTTP-Referer` (repo URL) and `X-Title` (`model-launch-check`).
-- `chat.completions.create({ model, messages, max_tokens, temperature, stream: true })`
+- `chat.completions.create({ model, messages, max_tokens, stream: true })`, plus `temperature`
+  only if the model sets `supportsTemperature: true`
 - Text: `chunk.choices[0]?.delta?.content`.
 - **Usage and cost come automatically in the last SSE chunk** as `chunk.usage`: `prompt_tokens`,
   `completion_tokens`, `cost`, plus `prompt_tokens_details.cached_tokens` and
@@ -122,8 +123,9 @@ Same idea as AI-Usage: normalize every provider into one format, and everything 
 ### Anthropic provider (box 2)
 
 - `new Anthropic({ apiKey, maxRetries: 0 })`
-- `messages.create({ model, max_tokens, temperature, messages, stream: true })` and iterate the
-  events (or `messages.stream()` and listen to events).
+- `messages.create({ model, max_tokens, messages, stream: true })` plus `temperature` only if
+  the model sets `supportsTemperature: true` (Claude 4.7+ rejects it), and iterate the events (or
+  `messages.stream()` and listen to events).
 - First `content_block_delta` whose `delta.type === "text_delta"` marks TTFT.
 - `message_start` → `message.usage.input_tokens`.
   `message_delta` → `usage.output_tokens` (cumulative; take the last one).
@@ -151,7 +153,8 @@ Same idea as AI-Usage: normalize every provider into one format, and everything 
 - Validate both YAML files with zod at startup and fail with a clear message on bad config.
 - Rule: `provider: anthropic` (any direct provider) **must** have `pricing`.
 - Prompts: either `text`, or `file` + `instruction`. Load `file` from `fixtures/`.
-- Prompt-level `maxTokens` / `temperature` override `defaults`.
+- Prompt-level `maxTokens` / `temperature` override `defaults`. `temperature` is only sent to
+  models that set `supportsTemperature: true`.
 
 ### CLI (index.ts)
 
