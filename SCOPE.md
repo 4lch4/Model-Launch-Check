@@ -4,12 +4,12 @@ A small TypeScript CLI that runs the same prompts across several models and repo
 latency and cost side by side. It is a mini version of the check a model aggregator runs when a
 new model or provider goes live.
 
-Built as a one-evening project (about 3.5 hours) to back an application to OpenRouter's AI
-Provider Operations & Support Engineer role.
+Planned as a one-evening build (about 3.5 hours). This is the plan as written before the build;
+the README describes what exists.
 
 ## The four boxes
 
-Each box is one resume claim. A claim goes on the resume only once its box is done.
+Each box is one deliverable, done when its row below is met.
 
 | #   | Box             | Done when                                                                |
 | --- | --------------- | ------------------------------------------------------------------------ |
@@ -145,8 +145,6 @@ Same idea as AI-Usage: normalize every provider into one format, and everything 
   needed.
 - Never let one failed request kill the run. Errors become `RunResult.error` and show up in
   the report.
-- README sentence: same lessons as the TargetProcess to Azure DevOps migration (retries, rate
-  limits, resumable runs).
 
 ### Config (config.ts)
 
@@ -206,8 +204,7 @@ Keep the Markdown report even if you cut the JSON.
 then retries, then the JSON output.
 
 **Stretch, only after all four boxes:** a pairwise LLM-as-judge pass. For each prompt, a cheap
-model picks the better of two answers with a one-line reason. It's an automated version of the
-side-by-side comparisons from the Meta contract work.
+model picks the better of two answers with a one-line reason.
 
 ## Sanity checks for the first real runs
 
@@ -232,19 +229,3 @@ About 15K input + 5K output tokens per model per full run (8 prompts, one long).
 
 About $0.17 per full run with all five. Develop with `--dev` (Haiku + Luna). Expect $1-2 total
 for the evening. DeepSeek's price varies by time of day on weekdays.
-
-## Resume claim (once boxes are done)
-
-> Built model-launch-check, a TypeScript (Bun) CLI that runs prompt sets across models through
-> OpenRouter and Anthropic's Messages API and reports time-to-first-token, latency, token usage,
-> and cost side by side (github.com/4lch4/model-launch-check).
-
-Only claim what's built: drop "Anthropic's Messages API" if box 2 was cut.
-
-## Be ready to explain in an interview
-
-- How TTFT is measured for each provider, and why reasoning models skew it.
-- Where OpenRouter's cost number comes from vs. computing it yourself.
-- Why SDK retries are off, and when a request is retried vs. recorded as an error.
-- What the OpenRouter vs. direct comparison showed (latency overhead, cost parity).
-- What you'd add next: provider routing options, more runs for stable medians, the judge.

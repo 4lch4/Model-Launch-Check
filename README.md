@@ -1,11 +1,12 @@
 # model-launch-check
 
-A small TypeScript (Bun) CLI that runs the same prompt set across several models through
-OpenRouter and through Anthropic's Messages API directly, then reports time-to-first-token,
-total latency, token usage and cost side by side.
+A small version of the check a model aggregator runs when a new model or provider goes
+live: a TypeScript (Bun) CLI that sends the same prompt set to several models and reports
+time-to-first-token, total latency, token usage and cost side by side.
 
-One model (Claude Sonnet 5.5) is deliberately run through both routes, so the report compares the
-aggregator against the provider for the same underlying model and to get experience with the Anthropic Messages API.
+Models run through OpenRouter, and one (Claude Sonnet 5.5) also runs through Anthropic's
+Messages API directly, so the report compares the aggregator against the provider for the
+same model.
 
 ## Quick start
 
@@ -42,7 +43,8 @@ A full run across all five models costs roughly **$0.04**. Reports are written t
   `cost` figure on its final stream chunk. The Messages API returns no cost, so it is computed
   from the per-model prices in `config/models.yaml`.
 
-A full sample output is in [docs/sample-report.md](docs/sample-report.md).
+A full report from an earlier three-run pass is in
+[docs/sample-report.md](docs/sample-report.md).
 
 ## Sample run
 
@@ -68,10 +70,11 @@ The same model through both routes:
 
 ## What the runs showed
 
-**Cost parity is exact; the gap is token count, not margin.** Both routes report identical input
-token totals (553 each), so OpenRouter is injecting no hidden context. The `$0.00066` cost
-difference is 66 extra output tokens at $10 per million, which is $0.00001 a token, and accounts for
-the entire gap.
+**Per-token pricing matches; the gap is output length.** Both routes report identical input
+token totals (553 each), so OpenRouter is injecting no hidden context. The `$0.00066`
+difference is 66 extra output tokens at $10 per million, which accounts for the entire gap.
+In the earlier three-run report the sign flips: OpenRouter returned 181 fewer output tokens
+and cost `$0.00181` less.
 
 **Aggregation overhead shows up in TTFT, not in total latency.** +26% on first token against +6% on
 total.
@@ -80,8 +83,11 @@ total.
 Flash hit the 800-token cap on reasoning and emitted zero visible characters. That is recorded
 directly as a `length` stop reason with `ttftMs: null` and a non-zero cost, which is the signal
 worth watching: you were billed for output nobody received. The summary counts it as truncated and
-the report flags it by name. It did not occur in the sample run above, but showed up repeatedly in
-earlier ones.
+the report flags it by name. It did not occur in the sample run above, but it did in
+[docs/sample-report.md](docs/sample-report.md) on the `refusal-boundary` prompt: all three
+DeepSeek runs returned no text and no TTFT, used 2,400 output tokens (the 800 cap, three
+times) and were billed `$0.00160`. That report predates stop-reason recording, so it shows
+the empty runs but not the `length` label.
 
 ## Adding a model
 
@@ -139,7 +145,8 @@ This project started with a plan from Claude on how to implement it and then I w
 the OpenRouter provider, runner, types, config logic, and initial `runner.ts`. After that I used
 Claude and Space Bunny (a stealth model) from OpenCode to analyze what I'd done, create the
 Anthropic provider and finish the `report.ts` file. After that it's been back and forth with Claude
-and Space Bunny to try and iron out anything I had missed.
+and Space Bunny to try and iron out anything I had missed. Running Sonnet directly was also a way
+to get hands-on with the Messages API.
 
 ## Further reading
 
