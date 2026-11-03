@@ -1,7 +1,7 @@
 # model-launch-check
 
 TypeScript (Bun) CLI that runs the same prompts across models via OpenRouter and Anthropic's
-Messages API and reports quality, latency, and cost side by side.
+Messages API and reports their outputs, latency, and cost side by side.
 
 **Read `SCOPE.md` first.** It defines the four boxes, the design and the cut list.
 
