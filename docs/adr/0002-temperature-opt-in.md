@@ -46,5 +46,6 @@ entries.
   that slug's OpenRouter `supported_parameters` (or the direct provider's docs) before setting
   `supportsTemperature: true`. As of 2026-11-03 only `deepseek/deepseek-v4.1-flash` of the
   configured OpenRouter models lists it.
-- Reports from before this change were produced with a temperature of 0 on some models that
-  ignored it. Runs before and after are not strictly comparable on that axis.
+- What each configured model actually receives does not change. OpenRouter already dropped the
+  value for Haiku 5.5 and GPT-6 Luna, both Sonnet routes already omitted it, and DeepSeek V4.1
+  Flash still gets 0. Earlier reports stay comparable; the config now says what each model gets.
