@@ -78,9 +78,10 @@ sign flipped: OpenRouter returned 66 more output tokens and cost `$0.00066` more
 **Pooled medians hide the aggregation overhead.** Median TTFT is 4% higher through OpenRouter and
 median total is 25% lower, but both medians pool six prompts of very different lengths. Prompt by
 prompt, OpenRouter's median TTFT was 58 to 511 ms higher on four of the six, which is the cost of
-the extra hop. The pooled figures flip because Anthropic direct was slow to start on
-`summarize-incident` in this run (2.2 to 3.3 s TTFT), and those runs land right where the median
-falls.
+the extra hop. The pooled total gap is wide because Anthropic direct was slow to start on
+`summarize-incident` in this run (2.2 to 3.3 s TTFT): one of those runs (3,772 ms) is a middle
+value of the direct route's 18 totals, so the median falls between it and the next-fastest run
+(2,632 ms).
 
 **Reasoning models can spend an entire budget and return nothing.** DeepSeek V4.1 Flash sometimes
 spends its whole token cap on reasoning and emits zero visible characters. That is recorded
@@ -159,3 +160,4 @@ to get hands-on with the Messages API.
 - [ADR 0001](docs/adr/0001-streaming-and-one-result-shape.md) - why stream, why one shape, why
   retries off
 - [ADR 0002](docs/adr/0002-temperature-opt-in.md) - why temperature is opt-in per model
+- [ADR 0003](docs/adr/0003-corrections-to-0001.md) - corrections to statements in ADR 0001
