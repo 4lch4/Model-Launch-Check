@@ -116,8 +116,8 @@ nothing about which provider produced a result. The one piece of provider-specif
 classification: SDK errors are normalized into `RequestError` with a `kind` and an HTTP `status`, so
 retry policy lives in the runner alone.
 
-**Everything streams.** TTFT is unmeasurable without streaming, and streaming is what makes the
-aggregator's per-token overhead visible in the first place.
+**Everything streams.** TTFT is unmeasurable without streaming, and streaming is what separates the
+aggregator's first-token overhead from total latency.
 
 **SDK retries are off** (`maxRetries: 0` on both clients) so the tool's own retry layer is the only
 one, and the `attempts` field in the report stays honest.

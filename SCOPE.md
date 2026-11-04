@@ -1,8 +1,8 @@
 # model-launch-check: scope
 
-A small TypeScript CLI that runs the same prompts across several models and reports quality,
-latency and cost side by side. It is a mini version of the check a model aggregator runs when a
-new model or provider goes live.
+A small TypeScript CLI that runs the same prompts across several models and reports their
+outputs, latency and cost side by side. It is a mini version of the check a model aggregator runs
+when a new model or provider goes live.
 
 Planned as a one-evening build (about 3.5 hours). This is the plan as written before the build;
 the README describes what exists.
