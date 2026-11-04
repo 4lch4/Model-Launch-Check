@@ -106,9 +106,9 @@ Same idea as AI-Usage: normalize every provider into one format, and everything 
 ### OpenRouter provider (box 1)
 
 - `new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey, maxRetries: 0 })`
-- Optional attribution headers: `HTTP-Referer` (repo URL) and `X-Title` (`model-launch-check`).
-- `chat.completions.create({ model, messages, max_tokens, stream: true })`, plus `temperature`
-  only if the model sets `supportsTemperature: true`
+- Optional attribution headers: `HTTP-Referer` (repo URL) and `X-OpenRouter-Title`
+  (`model-launch-check`). `X-Title` is only a legacy alias.
+- `chat.completions.create({ model, messages, max_tokens, temperature, stream: true })`
 - Text: `chunk.choices[0]?.delta?.content`.
 - **Usage and cost come automatically in the last SSE chunk** as `chunk.usage`: `prompt_tokens`,
   `completion_tokens`, `cost`, plus `prompt_tokens_details.cached_tokens` and
