@@ -5,10 +5,10 @@
 
 ## Context
 
-This tool answers two questions. The first: when a new model goes live at an aggregator, which of
-the models it offers feels fastest and costs least for a given prompt? The second: for the same
-model, what does routing through the aggregator cost in latency and in price compared to going to
-the provider directly?
+This tool answers two questions. The first being when a new model goes live at an aggregator: of the
+models available through us, which one feels fastest and costs least for a given prompt? The second
+is that for the same model, what does routing through the aggregator cost in latency and in price
+compared to going to the provider directly?
 
 Both are answered in a single run. Claude Sonnet 5.5 is deliberately configured twice — once through
 OpenRouter, once against Anthropic's Messages API — so the report can place the two routes side by
@@ -28,8 +28,9 @@ provider produced a result, and a table with one provider per column could not b
 **Latency without streaming is not measurable.** A non-streaming request returns one blob. You can
 time when it arrives, but not when the model started talking. Time to first token, which is the
 number that actually determines whether a chat UI feels responsive, simply does not exist without a
-stream. Streaming is also what shows where aggregator overhead lands: it separates the delay before
-the first token from the time to finish, rather than averaging both into a single round trip.
+stream. Streaming is also the only reason aggregator overhead is visible at all: it is a per-token
+cost, so it shows up in the gap between the first token and the last rather than being averaged into
+a single round trip.
 
 **Retries are a correctness question here, not a nicety.** The report has to state what a run cost
 and how many attempts it took. If the HTTP client retries silently underneath, `attempts` becomes
@@ -94,13 +95,14 @@ recorded as an error instead. `attempts` is written by the runner and means what
   suppresses the parameter lives in `models.yaml` and is set on **both** routes. Had it been
   fixed only on the direct side, the tool would have reported a comparison between two different
   configurations while labelling them the same model.
-- Single-run medians are noisy, so `--runs` exists to take medians over repeats.
+- Single-run medians are noisy. Across runs the same model and prompt moved by up to 3×. The
+  report says so, and `--runs` exists to take medians over repeats.
 - Reasoning models are recorded with `ttftMs: null` when they spend their whole token budget on
   reasoning and return no visible text. That is a real and expensive outcome, not a measurement
   failure, and it is worth surfacing rather than normalizing away. The stop reason records the
   truncation directly, and the report flags truncations that produced no visible output at all,
   together with what they cost.
-- Cost is trustworthy across providers only because its source is known per provider: a
+- Cost is trustworthy across providers only because the source is recorded per provider: a
   reported figure for OpenRouter, a computed figure from configured prices for Anthropic. The
-  README states which is which, and the comparison table only compares families that appear
-  under more than one provider.
+  comparison table is explicit about which is which by construction — it only ever compares
+  families that appear under more than one provider.
