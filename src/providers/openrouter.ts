@@ -60,7 +60,7 @@ export class OpenRouterProvider implements Provider {
           max_completion_tokens: prompt.maxTokens,
           // Mirrors the direct route: models.yaml decides, so a model compared across
           // both routes is measured under identical sampling settings.
-          ...(model.supportsTemperature === false ? {} : { temperature: prompt.temperature }),
+          ...(model.supportsTemperature ? { temperature: prompt.temperature } : {}),
           stream: true,
           // OpenRouter always sends usage and cost on the final chunk; no request flag needed.
         },

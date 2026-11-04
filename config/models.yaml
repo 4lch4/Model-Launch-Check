@@ -25,12 +25,12 @@ models:
   - provider: openrouter
     id: deepseek/deepseek-v4.1-flash
     label: DeepSeek V4.1 Flash (OpenRouter)
+    supportsTemperature: true # listed in OpenRouter's supported_parameters (checked 2026-11-03)
 
   - provider: openrouter
     id: anthropic/claude-sonnet-5.5
     label: Sonnet 5.5 (OpenRouter)
     family: sonnet-5.5
-    supportsTemperature: false
 
   # --- Direct ---
   # Same model as the OpenRouter Sonnet entry, so the report compares
@@ -39,7 +39,6 @@ models:
     id: claude-sonnet-5-5
     label: Sonnet 5.5 (Anthropic direct)
     family: sonnet-5.5
-    supportsTemperature: false
     pricing:
       inputPerM: 2.0
       outputPerM: 10.0

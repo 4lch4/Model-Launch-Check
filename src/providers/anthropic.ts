@@ -33,9 +33,9 @@ export class AnthropicProvider implements Provider {
           model: model.id,
           messages: [{ role: 'user', content: prompt.text }],
           max_tokens: prompt.maxTokens,
-          // models.yaml sets supportsTemperature: false on models that reject this
-          // parameter. Sending it anyway is a 400, not a silently ignored field.
-          ...(model.supportsTemperature === false ? {} : { temperature: prompt.temperature }),
+          // Temperature is deprecated on Claude 4.7 and later (a non-default value is a
+          // 400), so it is only sent to models that opt in via models.yaml.
+          ...(model.supportsTemperature ? { temperature: prompt.temperature } : {}),
           stream: true,
         },
         { signal },
