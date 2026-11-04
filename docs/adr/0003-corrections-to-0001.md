@@ -12,13 +12,14 @@ code. Accepted ADRs are not edited, so the corrections are recorded here.
 1. **"Of the models available through us."** The Context is phrased as if written from inside an
    aggregator. The tool is an outside check: it calls OpenRouter and Anthropic as a customer would.
 2. **Aggregator overhead as a per-token cost.** ADR 0001 says the overhead is per-token, so it
-   shows up between the first token and the last. The runs show the opposite. Sonnet 5.5 through
-   OpenRouter had a slower first token than the direct route in both reports (+26% in the
-   one-run sample, +27% in the three-run report), while total latency moved +6% in one and -10%
-   in the other. The overhead lands mostly before the first token.
+   shows up between the first token and the last. The three-run report in
+   `docs/sample-report.md` shows the opposite. Prompt by prompt, Sonnet 5.5 through OpenRouter
+   had a higher median TTFT than the direct route on four of six prompts (58 to 511 ms), but a
+   lower median total on all six. Whatever the extra hop costs is paid before the first token,
+   not added per token.
 3. **"Moved by up to 3×. The report says so."** The report says nothing about run-to-run noise,
-   and it prints only per-model medians, not per-run timings, so the 3× figure cannot be checked
-   from anything in the repository.
+   and it prints only medians, not per-run timings, so the 3× figure cannot be checked from
+   anything in the repository.
 4. **"The comparison table is explicit about which is which by construction."** The comparison
    table does not label which cost was reported by the provider and which was computed from
    configured prices. The README's "What it measures" section states it.
@@ -39,7 +40,7 @@ above, this record wins:
 ## Consequences
 
 - No code changes. Reports and the README read as they are.
-- The README's "Everything streams" note and "What the runs showed" already describe overhead as
-  first-token overhead, so they agree with this record.
+- The README's "Everything streams" note and its per-prompt TTFT finding in "What the runs
+  showed" already treat overhead as first-token overhead, so they agree with this record.
 - A future claim about run-to-run noise needs per-run timings in the report, or a pointer to the
   JSON output, before it is made.
