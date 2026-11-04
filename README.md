@@ -157,3 +157,4 @@ to get hands-on with the Messages API.
 - [ADR 0001](docs/adr/0001-streaming-and-one-result-shape.md) - why stream, why one shape, why
   retries off
 - [ADR 0002](docs/adr/0002-temperature-opt-in.md) - why temperature is opt-in per model
+- [ADR 0003](docs/adr/0003-corrections-to-0001.md) - corrections to statements in ADR 0001
