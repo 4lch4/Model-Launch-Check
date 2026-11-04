@@ -43,51 +43,53 @@ A full run across all five models costs roughly **$0.04**. Reports are written t
   `cost` figure on its final stream chunk. The Messages API returns no cost, so it is computed
   from the per-model prices in `config/models.yaml`.
 
-A full report from an earlier three-run pass is in
-[docs/sample-report.md](docs/sample-report.md).
-
 ## Sample run
 
-Five models, six prompts, one run each, `$0.0431` total, no errors.
+A full report from this latest three-run pass is in [docs/sample-report.md](docs/sample-report.md).
 
-| Model                            | Median TTFT | Median total | Input tok | Output tok | Cost     | Errors |
-| -------------------------------- | ----------- | ------------ | --------- | ---------- | -------- | ------ |
-| DeepSeek V4.1 Flash (OpenRouter) | 3,108 ms    | 3,153 ms     | 541       | 3,148      | $0.00258 | 0/6    |
-| GPT-6 Luna (OpenRouter)          | 2,220 ms    | 2,904 ms     | 389       | 1,751      | $0.00091 | 0/6    |
-| Haiku 5.5 (OpenRouter)           | 1,123 ms    | 1,982 ms     | 553       | 1,741      | $0.00093 | 0/6    |
-| Sonnet 5.5 (Anthropic direct)    | 828 ms      | 2,575 ms     | 553       | 1,792      | $0.01903 | 0/6    |
-| Sonnet 5.5 (OpenRouter)          | 1,041 ms    | 2,732 ms     | 553       | 1,858      | $0.01969 | 0/6    |
+5 models, 6 prompts, 3 runs each, `$0.13053` total, no errors.
 
-The same model through both routes:
+| Model                            | Median TTFT | Median total | Input tok | Output tok | Cost     | Errors | Truncated |
+| -------------------------------- | ----------- | ------------ | --------- | ---------- | -------- | ------ | --------- |
+| DeepSeek V4.1 Flash (OpenRouter) | 750 ms      | 2,519 ms     | 1,623     | 9,861      | $0.00577 | 0/18   | 7/18      |
+| GPT-6 Luna (OpenRouter)          | 3,626 ms    | 3,915 ms     | 1,167     | 4,699      | $0.00247 | 0/18   | 0/18      |
+| Haiku 5.5 (OpenRouter)           | 894 ms      | 1,640 ms     | 1,659     | 5,768      | $0.00305 | 0/18   | 3/18      |
+| Sonnet 5.5 (Anthropic direct)    | 762 ms      | 3,202 ms     | 1,659     | 5,757      | $0.06089 | 0/18   | 0/18      |
+| Sonnet 5.5 (OpenRouter)          | 789 ms      | 2,411 ms     | 1,659     | 5,504      | $0.05836 | 0/18   | 0/18      |
+
+Sonnet 5.5 through both routes:
 
 | Metric              | OpenRouter | Anthropic direct | Delta vs Anthropic direct |
 | ------------------- | ---------- | ---------------- | ------------------------- |
-| Median TTFT         | 1,041 ms   | 828 ms           | +26%                      |
-| Median total        | 2,732 ms   | 2,575 ms         | +6%                       |
-| Total input tokens  | 553        | 553              | +0%                       |
-| Total output tokens | 1,858      | 1,792            | +4%                       |
-| Total cost          | $0.01969   | $0.01903         | +3%                       |
+| Median TTFT         | 789 ms     | 762 ms           | +4%                       |
+| Median total        | 2,411 ms   | 3,202 ms         | -25%                      |
+| Total input tokens  | 1,659      | 1,659            | +0%                       |
+| Total output tokens | 5,504      | 5,757            | -4%                       |
+| Total cost          | $0.05836   | $0.06089         | -4%                       |
 
 ## What the runs showed
 
 **Per-token pricing matches; the gap is output length.** Both routes report identical input
-token totals (553 each), so OpenRouter is injecting no hidden context. The `$0.00066`
-difference is 66 extra output tokens at $10 per million, which accounts for the entire gap.
-In the earlier three-run report the sign flips: OpenRouter returned 181 fewer output tokens
-and cost `$0.00181` less.
+token totals (1,659 each), so OpenRouter is injecting no hidden context. OpenRouter returned 253
+fewer output tokens and cost `$0.00253` less: 253 tokens at $10 per million, which accounts for
+the entire gap. Which route writes more varies from run to run. In an earlier one-run pass the
+sign flipped: OpenRouter returned 66 more output tokens and cost `$0.00066` more.
 
-**Aggregation overhead shows up in TTFT, not in total latency.** +26% on first token against +6% on
-total.
+**Pooled medians hide the aggregation overhead.** Median TTFT is 4% higher through OpenRouter and
+median total is 25% lower, but both medians pool six prompts of very different lengths. Prompt by
+prompt, OpenRouter's median TTFT was 58 to 511 ms higher on four of the six, which is the cost of
+the extra hop. The pooled figures flip because Anthropic direct was slow to start on
+`summarize-incident` in this run (2.2 to 3.3 s TTFT), and those runs land right where the median
+falls.
 
-**Reasoning models can spend an entire budget and return nothing.** On some prompts, DeepSeek V4.1
-Flash hit the 800-token cap on reasoning and emitted zero visible characters. That is recorded
+**Reasoning models can spend an entire budget and return nothing.** DeepSeek V4.1 Flash sometimes
+spends its whole token cap on reasoning and emits zero visible characters. That is recorded
 directly as a `length` stop reason with `ttftMs: null` and a non-zero cost, which is the signal
 worth watching: you were billed for output nobody received. The summary counts it as truncated and
-the report flags it by name. It did not occur in the sample run above, but it did in
-[docs/sample-report.md](docs/sample-report.md) on the `refusal-boundary` prompt: all three
-DeepSeek runs returned no text and no TTFT, used 2,400 output tokens (the 800 cap, three
-times) and were billed `$0.00160`. That report predates stop-reason recording, so it shows
-the empty runs but not the `length` label.
+the report flags it by name. In the sample run above it happened on 7 of DeepSeek's 18 runs,
+including all three `refusal-boundary` runs, for 5,800 output tokens and `$0.00344` billed with
+nothing to show. Haiku 5.5 also hit the cap on all three `refusal-boundary` runs, but each had
+already written visible text, so they count as truncated without being flagged.
 
 ## Adding a model
 
