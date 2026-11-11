@@ -18,7 +18,6 @@ Messages API and reports their outputs, latency, and cost side by side.
 ## Rules
 
 - Prettier with no semicolons (`.prettierrc.mjs`). Run `bun run format` before committing.
-- Markdown lines at most 100 characters.
 - Every provider returns the `RunResult` shape from `src/types.ts`. Nothing downstream of the
   providers may know which provider produced a result.
 - SDK retries stay off (`maxRetries: 0`). Retries live in `src/runner.ts` only.
